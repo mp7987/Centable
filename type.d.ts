@@ -1,7 +1,7 @@
 import type { ImageSourcePropType } from "react-native";
 
 declare global {
-  interface TabIcanProps {
+  interface TabIconProps {
     focused: boolean;
     icon: ImageSourcePropType;
   }

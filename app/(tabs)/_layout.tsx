@@ -62,7 +62,6 @@ const Tablayout = () => {
         )
       }} />
     ))}
-    <Tabs.Screen name="subscriptions/[id]" options={{ href: null }} />
   </Tabs>
 }
 

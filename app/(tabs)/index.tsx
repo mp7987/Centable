@@ -1,6 +1,6 @@
 import "@/global.css"
 import { Link } from "expo-router";
-import { Text, View } from "react-native";
+import { Text } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 import { styled } from "nativewind";
 
@@ -31,7 +31,7 @@ export default function Index() {
         Go to Sign Up
       </Link>
 
-      <Link href="/subscriptions/spotify">Spotify Subscription</Link>
+      <Link href={{ pathname: "/subscriptions/[id]", params: { id: "spotify" } }}>Spotify Subscription</Link>
       <Link href={{ pathname: "/subscriptions/[id]", params: { id: "claude" } }}>Claude Max Subscription</Link>
     </SafeAreaView>
   );
