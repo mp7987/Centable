@@ -5,17 +5,19 @@
 @import "nativewind/theme";
 
 @theme {
-  --color-background: #fff9e3;
-  --color-foreground: #081126;
-  --color-card: #fff8e7;
-  --color-muted: #f6eecf;
-  --color-muted-foreground: rgba(0, 0, 0, 0.6);
-  --color-primary: #081126;
-  --color-accent: #ea7a53;
-  --color-border: rgba(0, 0, 0, 0.1);
-  --color-success: #16a34a;
-  --color-destructive: #dc2626;
-  --color-subscription: #8fd1bd;
+  /* Forest & Coin — Light (Defaults) */
+  --color-background: #f3f0e5;
+  --color-foreground: #1a2e2a;
+  --color-card: #fbf9f2;
+  --color-muted: #e9e4d2;
+  --color-muted-foreground: #6b6a60;
+  --color-primary: #1a2e2a;
+  --color-accent: #2d7a5e;
+  --color-accent-foreground: #ffffff;
+  --color-border: #ddd8cc;
+  --color-success: #2d7a5e;
+  --color-destructive: #bc4430;
+  --color-subscription: #aacfc4;
 
   --font-sans: sans-regular;
   --font-sans-light: sans-light;
@@ -23,7 +25,7 @@
   --font-sans-semibold: sans-semibold;
   --font-sans-bold: sans-bold;
   --font-sans-extrabold: sans-extrabold;
-  
+
 
   --spacing-0: 0px;
   --spacing-1: 4px;
@@ -51,6 +53,42 @@
   --font-sans-semibold: sans-semibold;
   --font-sans-bold: sans-bold;
   --font-sans-extrabold: sans-extrabold;
+}
+
+/* Runtime defaults — declared at :root as well as @theme so the
+   variables exist at runtime and can be swapped per color scheme */
+:root {
+  --color-background: #f3f0e5;
+  --color-foreground: #1a2e2a;
+  --color-card: #fbf9f2;
+  --color-muted: #e9e4d2;
+  --color-muted-foreground: #6b6a60;
+  --color-primary: #1a2e2a;
+  --color-accent: #2d7a5e;
+  --color-accent-foreground: #ffffff;
+  --color-border: #ddd8cc;
+  --color-success: #2d7a5e;
+  --color-destructive: #bc4430;
+  --color-subscription: #aacfc4;
+}
+
+/* Dark Forest — follows the system scheme and any manual
+   Appearance.setColorScheme() call */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #142420;
+    --color-foreground: #e8e5da;
+    --color-card: #1e3630;
+    --color-muted: #22403a;
+    --color-muted-foreground: #93ac9f;
+    --color-primary: #e8e5da;
+    --color-accent: #3ea57e;
+    --color-accent-foreground: #0d1a16;
+    --color-border: #2a453c;
+    --color-success: #5bc69b;
+    --color-destructive: #e5826b;
+    --color-subscription: #1f4a3c;
+  }
 }
 
 @layer components {
@@ -87,7 +125,7 @@
   }
 
   .home-add-icon {
-    @apply size-12;
+    @apply size-12 bg-accent rounded-full;
   }
 
   .home-balance-card {
@@ -95,7 +133,7 @@
   }
 
   .home-balance-label {
-    @apply text-xl font-sans-semibold text-white/80;
+    @apply text-xl font-sans-semibold text-accent-foreground/80;
   }
 
   .home-balance-row {
@@ -103,11 +141,11 @@
   }
 
   .home-balance-amount {
-    @apply text-4xl font-sans-extrabold text-white;
+    @apply text-4xl font-sans-extrabold text-accent-foreground;
   }
 
   .home-balance-date {
-    @apply text-xl font-sans-medium text-white;
+    @apply text-xl font-sans-medium text-accent-foreground;
   }
 
   .list-head {
@@ -119,7 +157,7 @@
   }
 
   .list-action {
-    @apply rounded-full border border-black/20 px-4 py-1;
+    @apply rounded-full border border-border px-4 py-1;
   }
 
   .list-action-text {
@@ -127,7 +165,7 @@
   }
 
   .upcoming-card {
-    @apply mr-4 w-44 rounded-2xl border border-black/10 bg-background p-4;
+    @apply mr-4 w-44 rounded-2xl border border-border bg-card p-4;
   }
 
   .upcoming-row {
@@ -175,11 +213,11 @@
   }
 
   .sub-title {
-    @apply mb-1 text-lg font-sans-bold text-primary;
+    @apply mb-1 text-lg font-sans-bold;
   }
 
   .sub-meta {
-    @apply text-sm font-sans-semibold text-muted-foreground;
+    @apply text-sm font-sans-semibold;
   }
 
   .sub-price-box {
@@ -187,11 +225,11 @@
   }
 
   .sub-price {
-    @apply mb-1 text-lg font-sans-bold text-primary;
+    @apply mb-1 text-lg font-sans-bold;
   }
 
   .sub-billing {
-    @apply text-sm font-sans-medium text-muted-foreground;
+    @apply text-sm font-sans-medium;
   }
 
   .sub-body {
@@ -231,7 +269,7 @@
   }
 
   .home-empty-state {
-    @apply py-4 text-sm font-sans-medium text-black/60;
+    @apply py-4 text-sm font-sans-medium text-muted-foreground;
   }
 
   .auth-safe-area {
@@ -263,7 +301,7 @@
   }
 
   .auth-logo-mark-text {
-    @apply text-2xl font-sans-extrabold text-background;
+    @apply text-2xl font-sans-extrabold text-accent-foreground;
   }
 
   .auth-wordmark {
@@ -323,7 +361,7 @@
   }
 
   .auth-button-text {
-    @apply text-base font-sans-bold text-primary;
+    @apply text-base font-sans-bold text-accent-foreground;
   }
 
   .auth-secondary-button {
