@@ -31,9 +31,10 @@ const SignIn = () => {
   const [code, setCode] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
+  const [deviceTrustUnavailable, setDeviceTrustUnavailable] = useState(false)
 
   const isSubmitting = fetchStatus === 'fetching'
-  const isVerifyingDevice = signIn.status === 'needs_client_trust'
+  const isVerifyingDevice = signIn.status === 'needs_client_trust' && !deviceTrustUnavailable
 
   const emailError = fieldErrors.email ?? errors.fields.identifier?.message
   const passwordError = fieldErrors.password ?? errors.fields.password?.message
@@ -55,6 +56,7 @@ const SignIn = () => {
 
   const handleSignIn = async () => {
     setFormError(null)
+    setDeviceTrustUnavailable(false)
     if (!validateCredentials()) return
 
     const { error } = await signIn.password({ emailAddress: emailAddress.trim(), password })
@@ -67,7 +69,12 @@ const SignIn = () => {
       await signIn.finalize({ navigate: goHome })
     } else if (signIn.status === 'needs_client_trust') {
       const emailCodeFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code')
-      if (emailCodeFactor) await signIn.mfa.sendEmailCode()
+      if (emailCodeFactor) {
+        await signIn.mfa.sendEmailCode()
+      } else {
+        setDeviceTrustUnavailable(true)
+        setFormError("We couldn't verify this device. Please try again or contact support.")
+      }
     } else {
       setFormError("We couldn't sign you in. Check your details and try again.")
     }
