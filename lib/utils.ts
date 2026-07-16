@@ -23,3 +23,11 @@ export const formatStatusLabel = (value?: string): string => {
   if (!value) return "Unknown";
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
+
+export const isValidEmail = (value: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+export const getClerkErrorMessage = (
+  error: { message?: string; longMessage?: string } | null | undefined,
+  fallback = "Something went wrong. Please try again."
+): string => error?.longMessage || error?.message || fallback;

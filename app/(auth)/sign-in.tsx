@@ -3,17 +3,17 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput,
 import { SafeAreaView as RNSafeAreaView } from 'react-native-safe-area-context'
 import { styled } from 'nativewind'
 import { type Href, Link, useRouter } from 'expo-router'
-import { useAuth, useSignUp } from '@clerk/expo'
+import { useSignIn } from '@clerk/expo'
 import clsx from 'clsx'
 import AuthBrand from '@/components/AuthBrand'
 import { getClerkErrorMessage, isValidEmail } from '@/lib/utils'
+import "@/global.css"
 
 const SafeAreaView = styled(RNSafeAreaView)
 
 type FieldErrors = {
   email?: string
   password?: string
-  confirmPassword?: string
   code?: string
 }
 
@@ -22,82 +22,86 @@ type NavigateParams = {
   decorateUrl: (url: string) => string
 }
 
-const SignUp = () => {
-  const { signUp, errors, fetchStatus } = useSignUp()
-  const { isSignedIn } = useAuth()
+const SignIn = () => {
+  const { signIn, errors, fetchStatus } = useSignIn()
   const router = useRouter()
 
   const [emailAddress, setEmailAddress] = useState('')
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [code, setCode] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
 
   const isSubmitting = fetchStatus === 'fetching'
-  const isVerifyingEmail =
-    signUp.status === 'missing_requirements' &&
-    signUp.unverifiedFields?.includes('email_address') &&
-    signUp.missingFields?.length === 0
+  const isVerifyingDevice = signIn.status === 'needs_client_trust'
 
-  const emailError = fieldErrors.email ?? errors.fields.emailAddress?.message
+  const emailError = fieldErrors.email ?? errors.fields.identifier?.message
   const passwordError = fieldErrors.password ?? errors.fields.password?.message
   const codeError = fieldErrors.code ?? errors.fields.code?.message
-
-  if (signUp.status === 'complete' || isSignedIn) return null
 
   const goHome = async ({ session, decorateUrl }: NavigateParams) => {
     if (session?.currentTask) return
     router.replace(decorateUrl('/') as Href)
   }
 
-  const validateDetails = () => {
+  const validateCredentials = () => {
     const nextErrors: FieldErrors = {}
     if (!emailAddress.trim()) nextErrors.email = 'Enter your email address.'
     else if (!isValidEmail(emailAddress)) nextErrors.email = 'Enter a valid email address.'
-    if (!password) nextErrors.password = 'Create a password.'
-    else if (password.length < 8) nextErrors.password = 'Use at least 8 characters.'
-    if (confirmPassword !== password) nextErrors.confirmPassword = 'Passwords do not match.'
+    if (!password) nextErrors.password = 'Enter your password.'
     setFieldErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
 
-  const handleCreateAccount = async () => {
+  const handleSignIn = async () => {
     setFormError(null)
-    if (!validateDetails()) return
+    if (!validateCredentials()) return
 
-    const { error } = await signUp.password({ emailAddress: emailAddress.trim(), password })
+    const { error } = await signIn.password({ emailAddress: emailAddress.trim(), password })
     if (error) {
-      setFormError(getClerkErrorMessage(error, "We couldn't create your account. Please try again."))
+      setFormError(getClerkErrorMessage(error, "We couldn't sign you in. Check your details and try again."))
       return
     }
 
-    await signUp.verifications.sendEmailCode()
+    if (signIn.status === 'complete') {
+      await signIn.finalize({ navigate: goHome })
+    } else if (signIn.status === 'needs_client_trust') {
+      const emailCodeFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code')
+      if (emailCodeFactor) await signIn.mfa.sendEmailCode()
+    } else {
+      setFormError("We couldn't sign you in. Check your details and try again.")
+    }
   }
 
-  const handleVerifyEmail = async () => {
+  const handleVerifyDevice = async () => {
     setFormError(null)
     if (!code.trim()) {
-      setFieldErrors((prev) => ({ ...prev, code: 'Enter the verification code.' }))
+      setFieldErrors((prev) => ({ ...prev, code: 'Enter the code we emailed you.' }))
       return
     }
 
-    const { error } = await signUp.verifications.verifyEmailCode({ code: code.trim() })
+    const { error } = await signIn.mfa.verifyEmailCode({ code: code.trim() })
     if (error) {
       setFormError(getClerkErrorMessage(error, "That code didn't work. Please try again."))
       return
     }
 
-    if (signUp.status === 'complete') {
-      await signUp.finalize({ navigate: goHome })
+    if (signIn.status === 'complete') {
+      await signIn.finalize({ navigate: goHome })
     } else {
-      setFormError("We couldn't verify your email. Please try again.")
+      setFormError("That code didn't work. Please try again.")
     }
   }
 
   const handleResendCode = () => {
     setFormError(null)
-    signUp.verifications.sendEmailCode()
+    signIn.mfa.sendEmailCode()
+  }
+
+  const handleStartOver = () => {
+    setFormError(null)
+    setCode('')
+    signIn.reset()
   }
 
   return (
@@ -111,14 +115,11 @@ const SignUp = () => {
         >
           <AuthBrand />
 
-          {isVerifyingEmail ? (
+          {isVerifyingDevice ? (
             <>
               <View className="auth-header-block">
-                <Text className="auth-title">Check your email</Text>
-                <Text className="auth-subtitle">
-                  We sent a verification code to {signUp.emailAddress ?? emailAddress}. Enter it below to activate
-                  your account.
-                </Text>
+                <Text className="auth-title">Verify it&apos;s you</Text>
+                <Text className="auth-subtitle">Enter the code we emailed you to confirm this device.</Text>
               </View>
 
               <View className="auth-card">
@@ -144,14 +145,18 @@ const SignUp = () => {
 
                   <Pressable
                     className={clsx('auth-button', isSubmitting && 'auth-button-disabled')}
-                    onPress={handleVerifyEmail}
+                    onPress={handleVerifyDevice}
                     disabled={isSubmitting}
                   >
-                    <Text className="auth-button-text">{isSubmitting ? 'Verifying...' : 'Verify & continue'}</Text>
+                    <Text className="auth-button-text">{isSubmitting ? 'Verifying...' : 'Verify'}</Text>
                   </Pressable>
 
                   <Pressable className="auth-secondary-button" onPress={handleResendCode} disabled={isSubmitting}>
                     <Text className="auth-secondary-button-text">Resend code</Text>
+                  </Pressable>
+
+                  <Pressable onPress={handleStartOver} disabled={isSubmitting}>
+                    <Text className="auth-helper text-center">Start over</Text>
                   </Pressable>
                 </View>
               </View>
@@ -159,8 +164,8 @@ const SignUp = () => {
           ) : (
             <>
               <View className="auth-header-block">
-                <Text className="auth-title">Create your account</Text>
-                <Text className="auth-subtitle">Track every subscription and never miss a renewal again.</Text>
+                <Text className="auth-title">Welcome back</Text>
+                <Text className="auth-subtitle">Sign in for sensible subscription management.</Text>
               </View>
 
               <View className="auth-card">
@@ -192,52 +197,30 @@ const SignUp = () => {
                         setPassword(value)
                         setFieldErrors((prev) => ({ ...prev, password: undefined }))
                       }}
-                      placeholder="Create a password"
+                      placeholder="Enter your password"
                       placeholderTextColor="rgba(0,0,0,0.)"
                       secureTextEntry
-                      autoComplete="new-password"
+                      autoComplete="password"
                     />
                     {passwordError && <Text className="auth-error">{passwordError}</Text>}
-                  </View>
-
-                  <View className="auth-field">
-                    <Text className="auth-label">Confirm password</Text>
-                    <TextInput
-                      className={clsx('auth-input', fieldErrors.confirmPassword && 'auth-input-error')}
-                      value={confirmPassword}
-                      onChangeText={(value) => {
-                        setConfirmPassword(value)
-                        setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }))
-                      }}
-                      placeholder="Re-enter your password"
-                      placeholderTextColor="rgba(0,0,0,0.)"
-                      secureTextEntry
-                      autoComplete="new-password"
-                    />
-                    {fieldErrors.confirmPassword && <Text className="auth-error">{fieldErrors.confirmPassword}</Text>}
                   </View>
 
                   {formError && <Text className="auth-error">{formError}</Text>}
 
                   <Pressable
-                    className={clsx(
-                      'auth-button',
-                      (isSubmitting || !emailAddress || !password || !confirmPassword) && 'auth-button-disabled'
-                    )}
-                    onPress={handleCreateAccount}
-                    disabled={isSubmitting || !emailAddress || !password || !confirmPassword}
+                    className={clsx('auth-button', (isSubmitting || !emailAddress || !password) && 'auth-button-disabled')}
+                    onPress={handleSignIn}
+                    disabled={isSubmitting || !emailAddress || !password}
                   >
-                    <Text className="auth-button-text">{isSubmitting ? 'Creating account...' : 'Create account'}</Text>
+                    <Text className="auth-button-text">{isSubmitting ? 'Signing in...' : 'Sign in'}</Text>
                   </Pressable>
-
-                  <View nativeID="clerk-captcha" />
                 </View>
               </View>
 
               <View className="auth-link-row">
-                <Text className="auth-link-copy">Already have an account?</Text>
-                <Link href="/(auth)/sign-in" asChild>
-                  <Text className="auth-link">Sign in</Text>
+                <Text className="auth-link-copy">New to Centable?</Text>
+                <Link href="/(auth)/sign-up" asChild>
+                  <Text className="auth-link">Create an account</Text>
                 </Link>
               </View>
             </>
@@ -248,4 +231,4 @@ const SignUp = () => {
   )
 }
 
-export default SignUp
+export default SignIn
