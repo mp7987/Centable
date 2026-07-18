@@ -12,6 +12,7 @@ import ListHeading from "@/components/ListHeading";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
 import SubscriptionCard from "@/components/SubscriptionCard";
 import { useState } from "react";
+import { posthog } from "@/lib/posthog";
 const SafeAreaView = styled(RNSafeAreaView);
 
 export default function App() {
@@ -50,10 +51,10 @@ export default function App() {
           data={UPCOMING_SUBSCRIPTIONS}
           renderItem={({ item }) => (
             <UpcomingSubscriptionCard data={item} />)}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            ListEmptyComponent={<Text className="home-empty-state">No upcoming renewals yet.</Text>}
+          keyExtractor={(item) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          ListEmptyComponent={<Text className="home-empty-state">No upcoming renewals yet.</Text>}
         />
       </View>
 
@@ -66,7 +67,17 @@ export default function App() {
             <SubscriptionCard 
               {...item}
               expanded={expandedSubscriptionId === item.id}
-              onPress={() => setExpandedSubscriptionId((currentId) => (currentId === item.id ? null : item.id))} 
+              onPress={() => {
+                const isExpanding = expandedSubscriptionId !== item.id;
+                setExpandedSubscriptionId((currentId) => (currentId === item.id ? null : item.id));
+                if (isExpanding) {
+                  posthog.capture("subscription_details_expanded", {
+                    subscription_id: item.id ?? "",
+                    billing_interval: item.billing?.toLowerCase() ?? "unknown",
+                    subscription_status: item.status ?? "unknown",
+                  });
+                }
+              }} 
             />
           )}
           extraData={expandedSubscriptionId}
