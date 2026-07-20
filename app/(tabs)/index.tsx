@@ -1,22 +1,27 @@
 import "@/global.css"
-import { Link } from "expo-router";
-import { FlatList, Image, ScrollView, Text, View } from "react-native";
+import { Link, useRouter } from "expo-router";
+import { FlatList, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 import { styled } from "nativewind";
 import images from "@/constants/images";
-import { HOME_BALANCE, HOME_SUBSCRIPTIONS, HOME_USER, UPCOMING_SUBSCRIPTIONS } from "@/constants/data";
+import { HOME_BALANCE, HOME_USER, UPCOMING_SUBSCRIPTIONS } from "@/constants/data";
 import { icons } from "@/constants/icons";
 import { formatCurrency } from "@/lib/utils";
 import dayjs from "dayjs";
 import ListHeading from "@/components/ListHeading";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
 import SubscriptionCard from "@/components/SubscriptionCard";
+import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
+import { useSubscriptions } from "@/lib/subscriptions-context";
 import { useState } from "react";
 import { posthog } from "@/lib/posthog";
 const SafeAreaView = styled(RNSafeAreaView);
 
 export default function App() {
+  const router = useRouter();
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null);
+  const { subscriptions, addSubscription } = useSubscriptions();
+  const [isCreateModalVisible, setCreateModalVisible] = useState(false);
 
   return (
     <SafeAreaView className="flex-1 bg-background p-5">
@@ -29,7 +34,9 @@ export default function App() {
                   <Image source={images.avatar} className="home-avatar"/>
                   <Text className="home-user-name">{HOME_USER.name}</Text>
                 </View>
-                <Image source={icons.add} className="home-add-icon" />
+                <Pressable onPress={() => setCreateModalVisible(true)}>
+                  <Image source={icons.add} className="home-add-icon" />
+                </Pressable>
               </View>
       <View className="home-balance-card">
         <Text className="home-balance-label">Balance</Text>
@@ -58,10 +65,10 @@ export default function App() {
         />
       </View>
 
-      <ListHeading title="All Subscriptions"/>
+      <ListHeading title="All Subscriptions" onPress={() => router.push("/subscriptions")}/>
             </>
           )}
-          data={HOME_SUBSCRIPTIONS}
+          data={subscriptions}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <SubscriptionCard 
@@ -87,7 +94,11 @@ export default function App() {
           contentContainerClassName="pb-30"
         />
 
-      
+      <CreateSubscriptionModal
+        visible={isCreateModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+        onCreate={addSubscription}
+      />
     </SafeAreaView>
   );
 }
