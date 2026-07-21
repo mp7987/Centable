@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@clerk/expo";
+import { SubscriptionsProvider } from "@/lib/subscriptions-context";
 
 const tabBar = components.tabBar;
 
@@ -31,8 +32,9 @@ const Tablayout = () => {
   if (!isLoaded) return null;
   if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
 
-  return <Tabs
-    screenOptions={{
+  return <SubscriptionsProvider>
+    <Tabs
+      screenOptions={{
        headerShown: false,
        tabBarShowLabel: false,
        tabBarStyle: {
@@ -66,7 +68,8 @@ const Tablayout = () => {
         )
       }} />
     ))}
-  </Tabs>
+    </Tabs>
+  </SubscriptionsProvider>
 }
 
 export default Tablayout;

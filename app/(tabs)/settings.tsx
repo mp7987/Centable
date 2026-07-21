@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 import { useAppColorScheme } from "@/lib/color-scheme";
+import { posthog } from "@/lib/posthog";
 
 const SafeAreaView = styled(RNSafeAreaView);
 
@@ -17,6 +18,8 @@ const Settings = () => {
     setIsSigningOut(true);
     try {
       await signOut();
+      posthog.capture('signed_out');
+      posthog.reset();
     } finally {
       setIsSigningOut(false);
     }

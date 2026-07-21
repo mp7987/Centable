@@ -7,6 +7,7 @@ import { useAuth, useSignUp } from '@clerk/expo'
 import clsx from 'clsx'
 import AuthBrand from '@/components/AuthBrand'
 import { getClerkErrorMessage, isValidEmail } from '@/lib/utils'
+import { posthog } from '@/lib/posthog'
 
 const SafeAreaView = styled(RNSafeAreaView)
 
@@ -89,6 +90,7 @@ const SignUp = () => {
     }
 
     if (signUp.status === 'complete') {
+      posthog.capture('account_created', { authentication_method: 'email_code' })
       await signUp.finalize({ navigate: goHome })
     } else {
       setFormError("We couldn't verify your email. Please try again.")

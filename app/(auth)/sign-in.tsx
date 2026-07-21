@@ -8,6 +8,7 @@ import clsx from 'clsx'
 import AuthBrand from '@/components/AuthBrand'
 import { getClerkErrorMessage, isValidEmail } from '@/lib/utils'
 import "@/global.css"
+import { posthog } from '@/lib/posthog'
 
 const SafeAreaView = styled(RNSafeAreaView)
 
@@ -66,6 +67,7 @@ const SignIn = () => {
     }
 
     if (signIn.status === 'complete') {
+      posthog.capture('signed_in', { authentication_method: 'password' })
       await signIn.finalize({ navigate: goHome })
     } else if (signIn.status === 'needs_client_trust') {
       const emailCodeFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === 'email_code')
@@ -94,6 +96,7 @@ const SignIn = () => {
     }
 
     if (signIn.status === 'complete') {
+      posthog.capture('signed_in', { authentication_method: 'email_code' })
       await signIn.finalize({ navigate: goHome })
     } else {
       setFormError("That code didn't work. Please try again.")

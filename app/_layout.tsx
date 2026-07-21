@@ -1,10 +1,12 @@
-import { SplashScreen, Stack } from "expo-router";
+import { SplashScreen, Stack, usePathname } from "expo-router";
 import "@/global.css";
 import { useFonts } from "expo-font"
-import { useEffect, useState } from "react";
-import { ClerkProvider } from "@clerk/expo";
+import { useEffect, useRef, useState } from "react";
+import { ClerkProvider, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { loadPersistedColorScheme } from "@/lib/color-scheme";
+import { PostHogProvider } from "posthog-react-native";
+import { posthog } from "@/lib/posthog";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -18,7 +20,21 @@ function getPublishableKey(): string {
 
 const publishableKey = getPublishableKey();
 
+function PostHogIdentityTracker() {
+  const { userId } = useAuth();
+
+  useEffect(() => {
+    if (userId) {
+      posthog.identify(userId);
+    }
+  }, [userId]);
+
+  return null;
+}
+
 export default function RootLayout() {
+  const pathname = usePathname();
+  const previousPathname = useRef<string | undefined>(undefined);
   const [fontsLoaded] = useFonts({
     'sans-regular': require('../assets/fonts/PlusJakartaSans-Regular.ttf'),
     'sans-bold': require('../assets/fonts/PlusJakartaSans-Bold.ttf'),
@@ -34,6 +50,13 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    if (previousPathname.current !== pathname) {
+      posthog.screen(pathname, { previous_screen: previousPathname.current ?? null });
+      previousPathname.current = pathname;
+    }
+  }, [pathname]);
+
+  useEffect(() => {
     if(fontsLoaded && colorSchemeLoaded) {
       SplashScreen.hideAsync()
     }
@@ -43,7 +66,13 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <Stack screenOptions={{headerShown: false}} />
+      <PostHogProvider
+        client={posthog}
+        autocapture={{ captureScreens: false, captureTouches: true, propsToCapture: ['testID'] }}
+      >
+        <PostHogIdentityTracker />
+        <Stack screenOptions={{headerShown: false}} />
+      </PostHogProvider>
     </ClerkProvider>
   );
 }
