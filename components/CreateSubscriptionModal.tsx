@@ -4,6 +4,8 @@ import clsx from "clsx";
 import dayjs from "dayjs";
 import { icons } from "@/constants/icons";
 import { useAppColorScheme } from "@/lib/color-scheme";
+import { posthog } from "@/lib/posthog";
+
 
 type Frequency = "Monthly" | "Yearly";
 
@@ -60,7 +62,7 @@ export default function CreateSubscriptionModal({ visible, onClose, onCreate }: 
 
     const newSubscription: Subscription = {
       id: `${trimmedName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
-      icon: icons.plus,
+      icon: icons.wallet,
       name: trimmedName,
       category,
       status: "active",
@@ -72,6 +74,14 @@ export default function CreateSubscriptionModal({ visible, onClose, onCreate }: 
     };
 
     onCreate(newSubscription);
+
+    posthog.capture('subscription_created', {
+      trimmedName,
+      category,
+      billing: frequency,
+      price, parsedPrice,
+    })
+
     resetForm();
     onClose();
   };
